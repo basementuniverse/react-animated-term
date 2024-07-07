@@ -1,9 +1,9 @@
 {
-  "name": "react-animated-term",
+  "name": "@basementuniverse/react-animated-term",
   "version": "2.1.0",
   "description": "React component for rendering animated terminals",
   "license": "MIT",
-  "repository": "https://github.com/dongy7/react-animated-term",
+  "repository": "https://github.com/basementuniverse/react-animated-term",
   "author": {
     "name": "Dong Yeop Lee",
     "email": "dong@dongyeop.com",
