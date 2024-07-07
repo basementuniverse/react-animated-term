@@ -3,7 +3,8 @@
 [![Build Status](https://travis-ci.org/dongy7/react-animated-term.svg?branch=master)](https://travis-ci.org/dongy7/react-animated-term)
 
 > Forked from https://github.com/dongy7/react-animated-term
-> This is an exact copy of `react-animated-term` with the React peer dependency updated to 18.2
+>
+> This is an exact copy of `react-animated-term` with the React peer dependency updated to 18.2.0
 
 > Animated terminal component for [React](https://reactjs.org/)
 
