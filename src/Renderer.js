@@ -3,6 +3,8 @@ import PropTypes from 'prop-types'
 import Terminal from './Terminal'
 import termContent from './contentHandler'
 
+const deepEqual = require('deep-equal')
+
 class Renderer extends React.Component {
   constructor(props) {
     super(props)
@@ -14,6 +16,7 @@ class Renderer extends React.Component {
   }
 
   componentDidMount() {
+    const props = this.props
     this.timer = setInterval(() => {
       const { value, done } = this.content.next()
       this.setState({
@@ -24,12 +27,23 @@ class Renderer extends React.Component {
         this.setState({
           completed: true,
         })
+
+        if (props.onComplete) {
+          props.onComplete()
+        }
       }
     }, this.props.interval)
   }
 
   componentWillUnmount() {
     clearInterval(this.timer)
+  }
+
+  componentDidUpdate(prevProps) {
+    if (!deepEqual(prevProps.lines, this.props.lines)) {
+      clearInterval(this.timer)
+      this.replay()
+    }
   }
 
   replay() {
@@ -48,6 +62,10 @@ class Renderer extends React.Component {
         this.setState({
           completed: true,
         })
+
+        if (props.onComplete) {
+          props.onComplete()
+        }
       }
     }, this.props.interval)
   }
@@ -68,11 +86,13 @@ class Renderer extends React.Component {
 Renderer.defaultProps = {
   interval: 100,
   lines: [],
+  onComplete: undefined,
 }
 
 Renderer.propTypes = {
   interval: PropTypes.number,
   lines: PropTypes.array,
+  onComplete: PropTypes.func,
 }
 
 export default Renderer

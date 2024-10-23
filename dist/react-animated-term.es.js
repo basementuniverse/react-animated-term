@@ -405,6 +405,8 @@ var possibleConstructorReturn = function (self, call) {
   return call && (typeof call === "object" || typeof call === "function") ? call : self;
 };
 
+var deepEqual = require('deep-equal');
+
 var Renderer = function (_React$Component) {
   inherits(Renderer, _React$Component);
 
@@ -426,6 +428,7 @@ var Renderer = function (_React$Component) {
     value: function componentDidMount() {
       var _this2 = this;
 
+      var props = this.props;
       this.timer = setInterval(function () {
         var _content$next = _this2.content.next(),
             value = _content$next.value,
@@ -439,6 +442,10 @@ var Renderer = function (_React$Component) {
           _this2.setState({
             completed: true
           });
+
+          if (props.onComplete) {
+            props.onComplete();
+          }
         }
       }, this.props.interval);
     }
@@ -446,6 +453,14 @@ var Renderer = function (_React$Component) {
     key: 'componentWillUnmount',
     value: function componentWillUnmount() {
       clearInterval(this.timer);
+    }
+  }, {
+    key: 'componentDidUpdate',
+    value: function componentDidUpdate(prevProps) {
+      if (!deepEqual(prevProps.lines, this.props.lines)) {
+        clearInterval(this.timer);
+        this.replay();
+      }
     }
   }, {
     key: 'replay',
@@ -470,6 +485,10 @@ var Renderer = function (_React$Component) {
           _this3.setState({
             completed: true
           });
+
+          if (props.onComplete) {
+            props.onComplete();
+          }
         }
       }, this.props.interval);
     }
@@ -495,12 +514,14 @@ var Renderer = function (_React$Component) {
 
 Renderer.defaultProps = {
   interval: 100,
-  lines: []
+  lines: [],
+  onComplete: undefined
 };
 
 Renderer.propTypes = {
   interval: PropTypes.number,
-  lines: PropTypes.array
+  lines: PropTypes.array,
+  onComplete: PropTypes.func
 };
 
 var Code = function Code(_ref) {
