@@ -2,6 +2,80 @@ import React from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 
+var classCallCheck = function (instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+};
+
+var createClass = function () {
+  function defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];
+      descriptor.enumerable = descriptor.enumerable || false;
+      descriptor.configurable = true;
+      if ("value" in descriptor) descriptor.writable = true;
+      Object.defineProperty(target, descriptor.key, descriptor);
+    }
+  }
+
+  return function (Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps);
+    if (staticProps) defineProperties(Constructor, staticProps);
+    return Constructor;
+  };
+}();
+
+var _extends = Object.assign || function (target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i];
+
+    for (var key in source) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
+        target[key] = source[key];
+      }
+    }
+  }
+
+  return target;
+};
+
+var inherits = function (subClass, superClass) {
+  if (typeof superClass !== "function" && superClass !== null) {
+    throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+  }
+
+  subClass.prototype = Object.create(superClass && superClass.prototype, {
+    constructor: {
+      value: subClass,
+      enumerable: false,
+      writable: true,
+      configurable: true
+    }
+  });
+  if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+};
+
+var objectWithoutProperties = function (obj, keys) {
+  var target = {};
+
+  for (var i in obj) {
+    if (keys.indexOf(i) >= 0) continue;
+    if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
+    target[i] = obj[i];
+  }
+
+  return target;
+};
+
+var possibleConstructorReturn = function (self, call) {
+  if (!self) {
+    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+  }
+
+  return call && (typeof call === "object" || typeof call === "function") ? call : self;
+};
+
 var cursor = React.createElement('span', { className: 'Terminal-cursor' });
 var prompt = React.createElement(
   'span',
@@ -9,15 +83,68 @@ var prompt = React.createElement(
   '$ '
 );
 
-var renderLines = function renderLines(lines) {
+// Each line's text can span several rows (separated by newlines), which are
+// rendered one at a time so that renderLine can style each row separately
+var renderRow = function renderRow(line, rowText, row, renderLine) {
+  return renderLine ? renderLine(_extends({}, line, { text: rowText }), row) : rowText;
+};
+
+var renderLines = function renderLines(lines, renderLine) {
   return lines.map(function (line) {
+    var rows = line.text.split('\n');
+
     return React.createElement(
       React.Fragment,
       { key: line.id },
       line.cmd ? prompt : '',
-      line.text,
+      rows.map(function (rowText, row) {
+        return React.createElement(
+          React.Fragment,
+          { key: row },
+          row > 0 ? '\n' : '',
+          renderRow(line, rowText, row, renderLine)
+        );
+      }),
       line.current ? cursor : '',
       React.createElement('br', null)
+    );
+  });
+};
+
+// Like an editor: commands are numbered rows of code, and output rows have an
+// empty gutter
+var renderNumberedLines = function renderNumberedLines(lines, renderLine) {
+  var lineNumber = 0;
+
+  return lines.map(function (line) {
+    var rows = line.text.split('\n');
+
+    return React.createElement(
+      React.Fragment,
+      { key: line.id },
+      rows.map(function (rowText, row) {
+        return React.createElement(
+          'div',
+          {
+            key: row,
+            className: classNames({
+              'Terminal-row': true,
+              'Terminal-row-output': !line.cmd
+            })
+          },
+          React.createElement(
+            'span',
+            { className: 'Terminal-line-number' },
+            line.cmd ? ++lineNumber : ''
+          ),
+          React.createElement(
+            'span',
+            { className: 'Terminal-row-content' },
+            renderRow(line, rowText, row, renderLine),
+            line.current && row === rows.length - 1 ? cursor : ''
+          )
+        );
+      })
     );
   });
 };
@@ -65,6 +192,9 @@ var Terminal = function Terminal(_ref) {
       white = _ref.white,
       height = _ref.height,
       code = _ref.code,
+      lineNumbers = _ref.lineNumbers,
+      renderLine = _ref.renderLine,
+      consoleRef = _ref.consoleRef,
       onReplay = _ref.onReplay,
       completed = _ref.completed;
 
@@ -91,7 +221,7 @@ var Terminal = function Terminal(_ref) {
         { className: getBodyStyle(code) },
         React.createElement(
           'div',
-          { className: getConsoleStyle(code, white) },
+          { className: getConsoleStyle(code, white), ref: consoleRef },
           code ? React.createElement(
             'code',
             { className: 'Terminal-code' },
@@ -101,8 +231,13 @@ var Terminal = function Terminal(_ref) {
             null,
             React.createElement(
               'div',
-              { className: 'Terminal-code' },
-              renderLines(children)
+              {
+                className: classNames({
+                  'Terminal-code': true,
+                  'Terminal-code-numbered': lineNumbers
+                })
+              },
+              lineNumbers ? renderNumberedLines(children, renderLine) : renderLines(children, renderLine)
             ),
             completed ? React.createElement(
               'a',
@@ -123,6 +258,9 @@ Terminal.propTypes = {
   white: PropTypes.bool,
   height: PropTypes.number,
   code: PropTypes.bool,
+  lineNumbers: PropTypes.bool,
+  renderLine: PropTypes.func,
+  consoleRef: PropTypes.oneOfType([PropTypes.func, PropTypes.object]),
   onReplay: PropTypes.func,
   completed: PropTypes.bool
 };
@@ -264,6 +402,7 @@ var terminalContent = /*#__PURE__*/regeneratorRuntime.mark(function terminalCont
             buffer[lineIndex].current = false;
             linePosition = 0;
             frameIndex = 0;
+            frameRepeatCounter = 0;
             lineIndex++;
           }
 
@@ -331,80 +470,6 @@ var terminalContent = /*#__PURE__*/regeneratorRuntime.mark(function terminalCont
   }, terminalContent, this);
 });
 
-var classCallCheck = function (instance, Constructor) {
-  if (!(instance instanceof Constructor)) {
-    throw new TypeError("Cannot call a class as a function");
-  }
-};
-
-var createClass = function () {
-  function defineProperties(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];
-      descriptor.enumerable = descriptor.enumerable || false;
-      descriptor.configurable = true;
-      if ("value" in descriptor) descriptor.writable = true;
-      Object.defineProperty(target, descriptor.key, descriptor);
-    }
-  }
-
-  return function (Constructor, protoProps, staticProps) {
-    if (protoProps) defineProperties(Constructor.prototype, protoProps);
-    if (staticProps) defineProperties(Constructor, staticProps);
-    return Constructor;
-  };
-}();
-
-var _extends = Object.assign || function (target) {
-  for (var i = 1; i < arguments.length; i++) {
-    var source = arguments[i];
-
-    for (var key in source) {
-      if (Object.prototype.hasOwnProperty.call(source, key)) {
-        target[key] = source[key];
-      }
-    }
-  }
-
-  return target;
-};
-
-var inherits = function (subClass, superClass) {
-  if (typeof superClass !== "function" && superClass !== null) {
-    throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
-  }
-
-  subClass.prototype = Object.create(superClass && superClass.prototype, {
-    constructor: {
-      value: subClass,
-      enumerable: false,
-      writable: true,
-      configurable: true
-    }
-  });
-  if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
-};
-
-var objectWithoutProperties = function (obj, keys) {
-  var target = {};
-
-  for (var i in obj) {
-    if (keys.indexOf(i) >= 0) continue;
-    if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
-    target[i] = obj[i];
-  }
-
-  return target;
-};
-
-var possibleConstructorReturn = function (self, call) {
-  if (!self) {
-    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-  }
-
-  return call && (typeof call === "object" || typeof call === "function") ? call : self;
-};
-
 var deepEqual = require('deep-equal');
 
 var Renderer = function (_React$Component) {
@@ -415,6 +480,7 @@ var Renderer = function (_React$Component) {
 
     var _this = possibleConstructorReturn(this, (Renderer.__proto__ || Object.getPrototypeOf(Renderer)).call(this, props));
 
+    _this.consoleRef = React.createRef();
     _this.content = terminalContent(props.lines);
     _this.state = {
       lines: _this.content.next().value,
@@ -457,6 +523,11 @@ var Renderer = function (_React$Component) {
   }, {
     key: 'componentDidUpdate',
     value: function componentDidUpdate(prevProps) {
+      // Keep the newest line in view as the content grows past the window
+      if (this.props.autoScroll && this.consoleRef.current) {
+        this.consoleRef.current.scrollTop = this.consoleRef.current.scrollHeight;
+      }
+
       if (!deepEqual(prevProps.lines, this.props.lines)) {
         clearInterval(this.timer);
         this.replay();
@@ -500,6 +571,7 @@ var Renderer = function (_React$Component) {
       return React.createElement(
         Terminal,
         _extends({}, this.props, {
+          consoleRef: this.consoleRef,
           onReplay: function onReplay() {
             return _this4.replay();
           },
@@ -515,12 +587,18 @@ var Renderer = function (_React$Component) {
 Renderer.defaultProps = {
   interval: 100,
   lines: [],
+  lineNumbers: false,
+  renderLine: undefined,
+  autoScroll: false,
   onComplete: undefined
 };
 
 Renderer.propTypes = {
   interval: PropTypes.number,
   lines: PropTypes.array,
+  lineNumbers: PropTypes.bool,
+  renderLine: PropTypes.func,
+  autoScroll: PropTypes.bool,
   onComplete: PropTypes.func
 };
 

@@ -8,6 +8,7 @@ const deepEqual = require('deep-equal')
 class Renderer extends React.Component {
   constructor(props) {
     super(props)
+    this.consoleRef = React.createRef()
     this.content = termContent(props.lines)
     this.state = {
       lines: this.content.next().value,
@@ -40,6 +41,11 @@ class Renderer extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
+    // Keep the newest line in view as the content grows past the window
+    if (this.props.autoScroll && this.consoleRef.current) {
+      this.consoleRef.current.scrollTop = this.consoleRef.current.scrollHeight
+    }
+
     if (!deepEqual(prevProps.lines, this.props.lines)) {
       clearInterval(this.timer)
       this.replay()
@@ -74,6 +80,7 @@ class Renderer extends React.Component {
     return (
       <Terminal
         {...this.props}
+        consoleRef={this.consoleRef}
         onReplay={() => this.replay()}
         completed={this.state.completed}
       >
@@ -86,12 +93,18 @@ class Renderer extends React.Component {
 Renderer.defaultProps = {
   interval: 100,
   lines: [],
+  lineNumbers: false,
+  renderLine: undefined,
+  autoScroll: false,
   onComplete: undefined,
 }
 
 Renderer.propTypes = {
   interval: PropTypes.number,
   lines: PropTypes.array,
+  lineNumbers: PropTypes.bool,
+  renderLine: PropTypes.func,
+  autoScroll: PropTypes.bool,
   onComplete: PropTypes.func,
 }
 

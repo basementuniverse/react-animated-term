@@ -120,3 +120,30 @@
   color: black;
   border: 2px solid black;
 }
+
+.Terminal-code-numbered {
+  white-space: pre;
+}
+
+.Terminal-row {
+  display: flex;
+}
+
+.Terminal-line-number {
+  flex: 0 0 auto;
+  min-width: 2em;
+  margin-right: 1.5em;
+  text-align: right;
+  color: rgb(128, 128, 128);
+  user-select: none;
+}
+
+.Terminal-row-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.Terminal-row-output .Terminal-row-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

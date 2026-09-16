@@ -90,3 +90,27 @@ test('correctly handles framed output', () => {
   expect(next.value).toMatchSnapshot()
   expect(next.done).toBe(true)
 })
+test('correctly handles a framed line after a repeated framed line', () => {
+  const lines = [
+    {
+      text: 'first',
+      cmd: false,
+      repeat: true,
+      repeatCount: 1,
+      frames: [{ text: 'a' }, { text: 'b' }]
+    },
+    {
+      text: 'second',
+      cmd: false,
+      frames: [{ text: 'c' }]
+    }
+  ]
+
+  const content = termContent(lines)
+  let next
+  do {
+    next = content.next()
+  } while (!next.done)
+
+  expect(next.value.map(line => line.text)).toEqual(['first', 'second'])
+})

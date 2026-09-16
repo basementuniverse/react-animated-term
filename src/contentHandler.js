@@ -81,6 +81,7 @@ const terminalContent = function* (lines) {
             buffer[lineIndex].current = false
             linePosition = 0
             frameIndex = 0
+            frameRepeatCounter = 0
             lineIndex++
           }
         }

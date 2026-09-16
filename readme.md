@@ -149,6 +149,10 @@ class App extends React.Component {
 | interval | number | 100 | interval at which terminal output is updated in milliseconds |
 | white | boolean | false | whether to render a white themed terminal |
 | height | number | 240 | the height of the terminal |
+| onComplete | function | undefined | called when the animation finishes |
+| lineNumbers | boolean | false | render like a code editor: command rows are numbered instead of prefixed with a `$` prompt, and output rows have an empty gutter |
+| renderLine | function | undefined | `(line, row) => node`, renders one row of a line's text (e.g. to highlight it). `line` is `{ id, text, cmd, current }`, where `id` is the line's index in `lines` and `text` is the row's text so far; `row` is the row's index within the line's text (split on newlines) |
+| autoScroll | boolean | false | keep the newest output in view when the content is taller than the terminal |
 
 ### Examples
 
